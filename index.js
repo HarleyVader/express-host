@@ -9,6 +9,9 @@ const app = express();
 // Set the view engine to ejs
 app.set('view engine', 'ejs');
 
+// Serve static files from a specific folder
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.get('/', function(req, res) {
     const filePath = path.join(__dirname, './views/content.txt');
 
