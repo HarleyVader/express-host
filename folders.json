@@ -1,0 +1,20 @@
+[
+  {
+    "title": "spirals",
+    "content": "Welcome to the spirals page!",
+    "homeUrl": "/spirals",
+    "iconSrc": "./assets/ico/spirals.ico"
+  },
+  {
+    "title": "tubes",
+    "content": "Welcome to the tubes page!",
+    "homeUrl": "/tubes",
+    "iconSrc": "./assets/ico/tubes.ico"
+  },
+  {
+    "title": "videos",
+    "content": "Welcome to the videos page!",
+    "homeUrl": "/videos",
+    "iconSrc": "./assets/ico/videos.ico"
+  }
+]

@@ -3,8 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
-
+  <% folders.forEach(function(folder) { %>
+  <title><%= folder.title %></title>
+<% }); %>
+    
     <meta
       name="description"
       content="melkanea simple build an nodejs express server to host custom websites alongside any CMS"
@@ -14,21 +16,22 @@
       content="hestiacp nginx nodejs express ejs web & app host"
     />
     <meta name="author" content="Melkanea" alt="melkanea was here" />
+     <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT"
+      crossorigin="anonymous"
+    />
   </head>
-  <body>
-    <h1>Welcome <%= title %>!</h1>
-    <p><%= content %></p>
-    <body>
-      <%- include('../../assets/ejs/header.ejs') %>
+  <body>  
+      <%- include('../assets/ejs/header.ejs', {folders: folders}) %>
       <br />
       <br />
-      <%- include('../../assets/ejs/main.ejs') %>
+      <%- include('../assets/ejs/main.ejs', {folders: folders}) %>
       <br />
       <br />
-      <%- include('../../assets/ejs/header.ejs') %>
-      <br />
-      <br />
-      <%- include('../../assets/ejs/footer.ejs') %>
+      <%- include('../assets/ejs/footer.ejs') %>
+       
     </body>
   </body>
 </html>
