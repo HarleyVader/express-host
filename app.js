@@ -22,10 +22,10 @@ const debug = {
     console.log(`Icon Source: ${iconSrc}`);
   },
     logHtmltwo: (title, content, homeUrl, iconSrc) => {
-    console.log(`Title: ${title}`);
-    console.log(`Content: ${content}`);
-    console.log(`Home URL: ${homeUrl}`);
-    console.log(`Icon Source: ${iconSrc}`);
+    console.log(`Title2: ${title}`);
+    console.log(`Content2: ${content}`);
+    console.log(`Home URL2: ${homeUrl}`);
+    console.log(`Icon Source2: ${iconSrc}`);
   },
   // Add more debug methods as needed
 };
@@ -42,8 +42,6 @@ let folderNames = fs.readdirSync(dirPath).filter((file) => {
 });
 debug.logFolderNames(folderNames);
 
-let folders = []; 
-
 app.get("/", function (req, res) {
   const dirPath = "./views"; // Specify your directory path here
 
@@ -53,66 +51,57 @@ app.get("/", function (req, res) {
       res.status(500).send("An error occurred while reading the directory.");
       return;
     }
-    folders = files
+    const folders = files
       .filter((file) => file.isDirectory())
       .map((folder) => {
-        return {
+        const folderInfo = {
           title: `${folder.name}`,
           content: `Welcome to the ${folder.name} page!`,
           homeUrl: `/${folder.name}`,
           iconSrc: `./assets/ico/${folder.name}.ico`,
         };
+        debug.logHtml(folderInfo.title, folderInfo.content, folderInfo.homeUrl, folderInfo.iconSrc);
+        return folderInfo;
       });
 
-    folders.forEach((folder) => {
-      debug.logHtml(
-        folder.title,
-        folder.content,
-        folder.homeUrl,
-        folder.iconSrc
-      );
-    });
-
-    fs.writeFile("folders.json", JSON.stringify(folders, null, 2), (err) => {
-      if (err) {
-        console.error(err);
-        res
-          .status(500)
-          .send("An error occurred while writing to the JSON file.");
-        return;
-      }
-
-      res.send("Successfully wrote folder names to folders.json!");
-    });
+    res.render('index', { folders: folders });
+    
   });
 });
-app.get("/:folderName", (req, res) => {
-  const { folderName } = req.params;
 
-  // Read and parse the JSON file
-  fs.readFile('folders.json', 'utf8', (err, data) => {
+app.get("/:folderName", function (req, res) {
+  const dirPath = "./views"; // Specify your directory path here
+
+  fs.readdir(dirPath, { withFileTypes: true }, (err, files) => {
     if (err) {
       console.error(err);
-      res.status(500).send("An error occurred while reading the JSON file.");
+      res.status(500).send("An error occurred while reading the directory.");
       return;
     }
+    const folders = files
+      .filter((file) => file.isDirectory())
+      .map((folder) => {
+        const folderInfo = {
+          title: `${folder.name}`,
+          content: `Welcome to the ${folder.name} page!`,
+          homeUrl: `/${folder.name}`,
+          iconSrc: `./assets/ico/${folder.name}.ico`,
+        };
+        debug.logHtml(folderInfo.title, folderInfo.content, folderInfo.homeUrl, folderInfo.iconSrc);
+        return folderInfo;
+      });
 
-    const folders = JSON.parse(data);
-    const folder = folders.find(f => f.title === folderName);
+    const folder = folders.find(f => f.title === req.params.folderName);
 
     if (folder) {
-      debug.logHtmltwo(
-        folder.title,
-        folder.content,
-        folder.homeUrl,
-        folder.iconSrc
-      )
-    res.render("index", {  folders: [folder]});
+        debug.logHtmltwo(folder.title, folder.content, folder.homeUrl, folder.iconSrc);
+        res.render('index', { folders: [folder] });
     } else {
-      res.status(404).send("Folder not found");
+        res.status(404).send('Folder not found');
     }
   });
 });
+
 
 // Start the server
 app.listen(PORT, () => {

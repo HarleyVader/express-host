@@ -3,10 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <% folders.forEach(function(folder) { %>
-  <title><%= folder.title %></title>
-<% }); %>
-    
+    <% folders.forEach(function(folder) { %>
+    <title><%= folder.title %></title>
+     
     <meta
       name="description"
       content="melkanea simple build an nodejs express server to host custom websites alongside any CMS"
@@ -23,15 +22,14 @@
       crossorigin="anonymous"
     />
   </head>
-  <body>  
-      <%- include('../assets/ejs/header.ejs', {folders: folders}) %>
+<body>  
+<% }); %>
+     <%- include('../assets/ejs/header.ejs', {folder: folders}) %>
       <br />
-      <br />
-      <%- include('../assets/ejs/main.ejs', {folders: folders}) %>
-      <br />
-      <br />
+      <br />     
+        <%- include('../assets/ejs/main.ejs', {folder: folders}) %>
+        <br />
+        <br />      
       <%- include('../assets/ejs/footer.ejs') %>
-       
-    </body>
+      
   </body>
-</html>

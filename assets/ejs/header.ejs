@@ -2,7 +2,7 @@
   <div class="row">
     <div class="col col-12">
       <div class="navbar-brand logo col-12 col-sm-3 col-lg-3 mr-auto p-2">
-      <% folders.forEach(folder => { %>
+        <title><%= folder.title %></title>
         <a href="<%= folder.homeUrl %>">         
           <img
             class="imgFluid"
@@ -10,9 +10,10 @@
             alt="Hypno Brainwash Tube Logo 2024"
           />
         </a>
+        <span id="timer">00:00:00</span>
       </div>
     </div>
   </div>
 </header>
 <%- include("../js/timer.ejs") %>
-<% }) %>
+
