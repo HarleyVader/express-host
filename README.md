@@ -23,7 +23,7 @@ Replace `<user>` with your username and `<website>` with the name of your websit
 `chmod 777 -R nginx`
 `chown -R <user>:<user> nginx` 
 
-4. Run the `install.sh` script to create a custom `nginx.conf_port` at /home/<user>/conf/<website>/:
+4. Run the `install.sh` script to create a custom `nginx.conf_port` at `/home/<user>/conf/<website>/`
 if run succesfully it will create 2 files nginx.conf_<port> & nginx.ssl.conf_<port> based on the template nginx.conf_melkanea by replacing <user> <port> <URL> 
 it works as hestiaCP default nginx.conf has an include section so no need to edit anything, no need to expose certificates or use https
 
