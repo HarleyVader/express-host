@@ -31,8 +31,8 @@ function getDirectories(basePath, dirPath = basePath, folderName = '') {
     }
   }
   
- console.log('Directory Path:', dirPath);
-  console.log('Folder Names:', directories);
+// console.log('Directory Path:', dirPath);
+  //console.log('Folder Names:', directories);
   return directories;
 }
 
@@ -54,7 +54,6 @@ app.get("/", function (req, res) {
       iconSrc: `./assets/ico/${folderName}.ico`,
       subfolders: subfolders, // add subfolders property
     };
-    console.log('title: ', folderInfo.title, 'homeUrl:', folderInfo.homeUrl, 'iconSrc:', folderInfo.iconSrc);
     return folderInfo;
   });
 
@@ -80,7 +79,6 @@ app.get("/:folderName", function (req, res) {
       iconSrc: `./assets/ico/${folderName}.ico`,
       subfolders: subfolders, // add subfolders property
     };
-    console.log('title: ', folderInfo.title, 'homeUrl:', folderInfo.homeUrl, 'iconSrc:', folderInfo.iconSrc, 'subFolder:', folderInfo.subfolders);
     return folderInfo;
   });
 
@@ -92,6 +90,7 @@ app.get("/:folderName", function (req, res) {
     res.status(404).send('Folder not found');
   }
 });
+
 app.get("/:folderName/:subfolderName", function (req, res) {
   const directories = getDirectories(dirPath);
   const folders = directories.map((directory) => {
@@ -111,7 +110,6 @@ app.get("/:folderName/:subfolderName", function (req, res) {
       iconSrc: `./assets/ico/${folderName}.ico`,
       subfolders: subfolders, // add subfolders property
     };
-    console.log('title: ', folderInfo.title, 'homeUrl:', folderInfo.homeUrl, 'iconSrc:', folderInfo.iconSrc, 'subFolder:', folderInfo.subfolders);
     return folderInfo;
   });
 
@@ -124,6 +122,7 @@ app.get("/:folderName/:subfolderName", function (req, res) {
     res.status(404).send('Folder not found');
   }
 });
+
 // Start the server
 app.listen(PORT, () => {
   console.log('express-port', PORT);

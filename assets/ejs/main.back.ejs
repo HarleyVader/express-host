@@ -1,0 +1,52 @@
+  <div class="container pt-30 categories-list">
+    <div class="row">
+      <div class="col col-12">
+        <div class="card-columns">
+          <% folders.forEach(folders => { %>
+            <div class="card-primary col-12 col-sm-3 col-lg-3 mr-auto p-2">
+              <div class="card-header" id="<%= folders.title %>">
+                <i class="fa-solid fa-film"></i>
+                <a title="<%= folders.title %>" href="<%= folders.homeUrl %>">               
+                  <h1 class="card-title"><%= folders.title %>                 
+                    <div class="pull-right">
+                      <i class="fa fa-external-link"></i>
+                    </div>
+                  </h1>
+                </a>
+                <% folders.subfolders.forEach(function(subfolder) { %>
+                  <div class="card-block">
+                    <ol>
+                      <!--Ranking list -->
+                      <li>
+                        <!--listed item -->
+                        <div class="icon">
+                          <img
+                            class="favicon"
+                            alt=""
+                            src="<%= subfolder.iconSrc %>"
+                            width="15px"
+                            height="15px"
+                          />
+                          <a class="link" href="<%= subfolder.homeUrl %>"></a>
+                          <a
+                            title="<%= subfolder.title %>"
+                            rel="noopener nofollow"
+                            target="_new"
+                            href="<%= subfolder.homeUrl %>"
+                          >
+                            <i class="fa fa-external-link"></i>
+                          </a>
+                        </div>
+                      </li>
+                      <!--listed item END-->
+                    </ol>
+                    <!--Ranking list END-->
+                  </div> 
+                <% }) %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+

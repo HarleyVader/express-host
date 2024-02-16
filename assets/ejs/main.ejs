@@ -1,52 +1,51 @@
-  <div class="container pt-30 categories-list">
-    <div class="row">
-      <div class="col col-12">
-        <div class="card-columns">
-          <% folders.forEach(folder => { %>
-            <div class="card-primary col-12 col-sm-3 col-lg-3 mr-auto p-2">
-              <div class="card-header" id="<%= folder.title %>">
-                <i class="fa-solid fa-film"></i>
-                <a title="<%= folder.title %>" href="<%= folder.homeUrl %>">               
-                  <h1 class="card-title"><%= folder.title %>                 
-                    <div class="pull-right">
-                      <i class="fa fa-external-link"></i>
-                    </div>
-                  </h1>
-                </a>
-                <% folder.subfolders.forEach(function(subfolder) { %>
-                  <div class="card-block">
-                    <ol>
-                      <!--Ranking list -->
-                      <li>
-                        <!--listed item -->
-                        <div class="icon">
-                          <img
-                            class="favicon"
-                            alt=""
-                            src="<%= subfolder.iconSrc %>"
-                            width="15px"
-                            height="15px"
-                          />
-                          <a class="link" href="<%= subfolder.homeUrl %>"></a>
-                          <a
-                            title="<%= subfolder.title %>"
-                            rel="noopener nofollow"
-                            target="_new"
-                            href="<%= subfolder.homeUrl %>"
-                          >
-                            <i class="fa fa-external-link"></i>
-                          </a>
-                        </div>
-                      </li>
-                      <!--listed item END-->
-                    </ol>
-                    <!--Ranking list END-->
-                  </div> 
-                <% }) %>
-              </div>
+<div class="container pt-30 categories-list">
+  <div class="row">
+    <div class="col col-12">
+      <div class="card-columns">
+        <% folders.forEach(function(folder) { %>
+          <div class="card-primary col-12 col-sm-3 col-lg-3 mr-auto p-2">
+            <div class="card-header" id="<%= folder.title %>">
+              <a title="<%= folder.title %>" href="<%= folder.homeUrl %>">               
+                <h1 class="card-title"><%= folder.title %>                 
+                   <i class="fa fa-external-link"></i>
+                </h1>
+              </a>
+             <% if (folder.subfolders) { %>
+              <% folder.subfolders.forEach(function(subfolder) { %>
+                <div class="card-block">
+                  <ul>
+                    <!--Ranking list -->
+                    <li>
+                      <!--listed item -->
+                      <div class="icon">
+                        <img
+                          class="favicon"
+                          alt=""
+                          src="<%= subfolder.iconSrc %>"
+                          width="15px"
+                          height="15px"
+                        />
+                        <a class="link" href="<%= subfolder.homeUrl %>"><%= subfolder.title %></a>
+                        <a
+                          title="<%= subfolder.title %>"
+                          rel="noopener nofollow"
+                          target="_new"
+                          href="<%= subfolder.homeUrl %>"
+                        >
+                          <i class="fa fa-external-link"></i>
+                        </a>
+                      </div>
+                    </li>
+                    <!--listed item END-->
+                  </ul>
+                  <!--Ranking list END-->
+                </div> 
+              <% }); %>
+            <% } %>
             </div>
-          <% }) %>
-        </div>
+          </div>
+        <% }); %>
       </div>
     </div>
-
+  </div>
+</div>
