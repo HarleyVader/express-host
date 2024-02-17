@@ -1,129 +1,114 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const { Level } = require("level");
+
+
+const PORT = 7777;
+// Define the directory path 
+const views = "./views";
 
 const app = express();
-const PORT = 7777;
-
-// Set EJS as the view engine
+// Set the view engine to EJS
 app.set("view engine", "ejs");
 
-// Specify the directory you want to read
-const dirPath = path.resolve("./views");
+// Create or open the existing LevelDB database
+const db = new Level('vidViews', { valueEncoding: 'json' });
+// Create a database
+db.open();
 
-function getDirectories(basePath, dirPath = basePath, folderName = '') {
-  let directories = [];
-  
-  // Check if directory exists
-  if (fs.existsSync(dirPath)) {
-    const files = fs.readdirSync(dirPath, { withFileTypes: true });
+//addTodb
+async function addTodb(dirPath = views) {
+    try {
+        const files = fs.readdirSync(dirPath);
 
-    for (const file of files) {
-      if (file.isDirectory()) {
-        const filePath = path.join(dirPath, file.name);
-        const relativePath = path.relative(basePath, filePath);
-        const subfolderName = folderName ? `${folderName}/${file.name}` : file.name;
-        directories.push({
-          path: subfolderName,
-          subdirectories: getDirectories(basePath, filePath, subfolderName)
-        });
-      }
+        for (let file of files) {
+            const filePath = path.join(dirPath, file);
+
+            if (fs.statSync(filePath).isDirectory()) {
+                if (!excludedir.includes(file)) {
+                    await addTodb(filePath); // Recursive call for subdirectory
+                    if (!await db.get(filePath, () => false)) {
+                        await db.put(filePath, 0);
+                    }
+                }
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error in addTodb:', error);
     }
-  }
-  
-// console.log('Directory Path:', dirPath);
-  //console.log('Folder Names:', directories);
-  return directories;
+}
+async function getFromdb() {
+ let list = [];
+    for await (const [key, value] of db.iterator({})) {
+        list.push({ key, value });
+    }
+     return list;
+}
+// Increment the value of a folder in the database
+async function incrementFolderValue(folderPath) {
+    try {
+        // Get the current value
+        let value;
+        try {
+            value = await db.get(folderPath);
+        } catch (error) {
+            if (error.notFound) {
+                value = 0; // Default value if the key does not exist
+            } else {
+                throw error; // Re-throw other errors
+            }
+        }
+        
+        // Increment the value
+        value += 1;
+        
+        // Update the value in the database
+        await db.put(folderPath, value);
+        
+        console.log(`Folder ${folderPath} accessed ${value} times.`);
+    } catch (error) {
+        console.error('Error in incrementFolderValue:', error);
+    }
 }
 
-app.get("/", function (req, res) {
-  const directories = getDirectories(dirPath);
-  const folders = directories.map((directory) => {
-    const folderName = path.basename(directory.path.toString());
-    const subfolders = directory.subdirectories.map((subdirectory) => { // map subdirectories to subfolders
-      const subfolderName = path.basename(subdirectory.path.toString());
-      return {
-        title: `${subfolderName}`,
-        homeUrl: `/${folderName}/${subfolderName}`,
-        iconSrc: `./assets/ico/${subfolderName}.ico`,
-      };
-    });
-    const folderInfo = {
-      title: `${folderName}`,
-      homeUrl: `/${folderName}`,
-      iconSrc: `./assets/ico/${folderName}.ico`,
-      subfolders: subfolders, // add subfolders property
-    };
-    return folderInfo;
-  });
 
-  res.render('index', { folders: folders });
-});
-
-app.get("/:folderName", function (req, res) {
-  const directories = getDirectories(dirPath);
-  const folders = directories.map((directory) => {
-    const folderName = path.basename(directory.path.toString());
-    const subdirectories = directory.subdirectories; // get subdirectories
-    const subfolders = subdirectories.length > 0 ? subdirectories.map((subdirectory) => { // map subdirectories to subfolders
-      const subfolderName = path.basename(subdirectory.path.toString());
-      return {
-        title: `${subfolderName}`,
-        homeUrl: `/${folderName}/${subfolderName}`,
-        iconSrc: `./assets/ico/${subfolderName}.ico`,
-      };
-    }) : [];
-    const folderInfo = {
-      title: `${folderName}`,
-      homeUrl: `/${folderName}`,
-      iconSrc: `./assets/ico/${folderName}.ico`,
-      subfolders: subfolders, // add subfolders property
-    };
-    return folderInfo;
-  });
-
-  const folder = folders.find(f => f.title === req.params.folderName);
-
-  if (folder) {
-    res.render('index', { folders: [folder] });
-  } else {
-    res.status(404).send('Folder not found');
+/*
+// Define the routes
+app.get("/sync", async (req, res) => {
+  try {
+    await processDirectory(dirname);
+    console.log("Sync Complete!", dirname);
+    res.redirect("/list");
+  } catch (error) {
+    console.error(`Error in GET /sync: ${error}`);
   }
 });
-
-app.get("/:folderName/:subfolderName", function (req, res) {
-  const directories = getDirectories(dirPath);
-  const folders = directories.map((directory) => {
-    const folderName = path.basename(directory.path.toString());
-    const subdirectories = directory.subdirectories; // get subdirectories
-    const subfolders = subdirectories.length > 0 ? subdirectories.map((subdirectory) => { // map subdirectories to subfolders
-      const subfolderName = path.basename(subdirectory.path.toString());
-      return {
-        title: `${subfolderName}`,
-        homeUrl: `/${folderName}/${subfolderName}`,
-        iconSrc: `./assets/ico/${subfolderName}.ico`,
-      };
-    }) : [];
-    const folderInfo = {
-      title: `${folderName}`,
-      homeUrl: `/${folderName}`,
-      iconSrc: `./assets/ico/${folderName}.ico`,
-      subfolders: subfolders, // add subfolders property
-    };
-    return folderInfo;
-  });
-
-  const folder = folders.find(f => f.title === req.params.folderName);
-  const subfolder = folder ? folder.subfolders.find(sf => sf.title === req.params.subfolderName) : null;
-
-  if (subfolder) {
-    res.render('index', { folders: [subfolder] });
-  } else {
-    res.status(404).send('Folder not found');
-  }
+*/
+app.get("/:folderName", async (req, res) => {
+    const folderPath = path.join(views, req.params.folderName);
+    
+    // Increment the value of the folder in the database
+    await incrementFolderValue(folderPath);
+    
+    // ... rest of your route handler ...
 });
 
+/*
+app.get("/:folderName/:subfolderName", (req, res) => {
+ 
+});
+*/
 // Start the server
 app.listen(PORT, () => {
-  console.log('express-port', PORT);
+  console.log(`Server started on port ${PORT}`);
 });
+async function main() {
+    let folders = await addTodb();
+    console.log("addedFolders: ", folders);
+    let tree = await getFromdb();
+    console.log("returnedFolders :", tree);
+}
+
+main().catch(console.error);
