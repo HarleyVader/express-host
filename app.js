@@ -14,31 +14,44 @@ app.set("view engine", "ejs");
 
 // Create or open the existing LevelDB database
 const db = new Level('vidViews', { valueEncoding: 'json' });
-// Create a database
-db.open();
 
+// Define the excluded directories
+const excludedir = ["assets", "src", "node_modules", "vidViews"];
+
+// Filter function
+const filter = (value, dirPath = views) => {
+    const fullPath = path.resolve(dirPath) + '/' + value;
+    if (excludedir.includes(value) || !fs.existsSync(fullPath)) {
+        return false; 
+    }
+    if (fs.statSync(fullPath).isDirectory()) {
+        return true
+    }
+    return false
+}
 //addTodb
-async function addTodb(dirPath = views) {
+async function addTodb(dirPath = views, addedDirs = []) {
     try {
-        const files = fs.readdirSync(dirPath);
-
+        const files = fs.readdirSync(dirPath).filter(file => filter(file, dirPath));
         for (let file of files) {
             const filePath = path.join(dirPath, file);
-
             if (fs.statSync(filePath).isDirectory()) {
-                if (!excludedir.includes(file)) {
-                    await addTodb(filePath); // Recursive call for subdirectory
-                    if (!await db.get(filePath, () => false)) {
-                        await db.put(filePath, 0);
-                    }
+                await addTodb(filePath, addedDirs); // Pass addedDirs to the recursive call
+                let key = filePath.replace(/^views\//, ''); // Remove the 'views/' part from the start of the key 
+                key = key.startsWith('/') ? key : '/' + key; // Add leading slash if not present
+                if (!await db.get(key, () => false)) {
+                    await db.put(key, 0);
+                    addedDirs.push(key); // Add the directory to the list
                 }
             }
-        }
-        
+        }   
     } catch (error) {
         console.error('Error in addTodb:', error);
     }
+    return addedDirs;
 }
+
+
 async function getFromdb() {
  let list = [];
     for await (const [key, value] of db.iterator({})) {
@@ -59,21 +72,16 @@ async function incrementFolderValue(folderPath) {
             } else {
                 throw error; // Re-throw other errors
             }
-        }
-        
+        }        
         // Increment the value
-        value += 1;
-        
+        value += 1;        
         // Update the value in the database
         await db.put(folderPath, value);
-        
         console.log(`Folder ${folderPath} accessed ${value} times.`);
     } catch (error) {
         console.error('Error in incrementFolderValue:', error);
     }
 }
-
-
 /*
 // Define the routes
 app.get("/sync", async (req, res) => {
@@ -85,7 +93,6 @@ app.get("/sync", async (req, res) => {
     console.error(`Error in GET /sync: ${error}`);
   }
 });
-*/
 app.get("/:folderName", async (req, res) => {
     const folderPath = path.join(views, req.params.folderName);
     
@@ -94,10 +101,7 @@ app.get("/:folderName", async (req, res) => {
     
     // ... rest of your route handler ...
 });
-
-/*
 app.get("/:folderName/:subfolderName", (req, res) => {
- 
 });
 */
 // Start the server
@@ -110,5 +114,4 @@ async function main() {
     let tree = await getFromdb();
     console.log("returnedFolders :", tree);
 }
-
 main().catch(console.error);
