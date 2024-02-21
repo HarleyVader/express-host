@@ -3,115 +3,146 @@ const fs = require("fs");
 const path = require("path");
 const { Level } = require("level");
 
-
 const PORT = 7777;
-// Define the directory path 
 const views = "./views";
-
-const app = express();
-// Set the view engine to EJS
-app.set("view engine", "ejs");
-
-// Create or open the existing LevelDB database
 const db = new Level('vidViews', { valueEncoding: 'json' });
-
-// Define the excluded directories
 const excludedir = ["assets", "src", "node_modules", "vidViews"];
-
-// Filter function
 const filter = (value, dirPath = views) => {
     const fullPath = path.resolve(dirPath) + '/' + value;
     if (excludedir.includes(value) || !fs.existsSync(fullPath)) {
         return false; 
     }
     if (fs.statSync(fullPath).isDirectory()) {
-        return true
+        return true;
     }
-    return false
+    return false;
 }
-//addTodb
 async function addTodb(dirPath = views, addedDirs = []) {
     try {
         const files = fs.readdirSync(dirPath).filter(file => filter(file, dirPath));
         for (let file of files) {
             const filePath = path.join(dirPath, file);
             if (fs.statSync(filePath).isDirectory()) {
-                await addTodb(filePath, addedDirs); // Pass addedDirs to the recursive call
-                let key = filePath.replace(/^views\//, ''); // Remove the 'views/' part from the start of the key 
-                key = key.startsWith('/') ? key : '/' + key; // Add leading slash if not present
-                if (!await db.get(key, () => false)) {
-                    await db.put(key, 0);
-                    addedDirs.push(key); // Add the directory to the list
-                }
-            }
-        }   
+                await addTodb(filePath, addedDirs); 
+                let key = filePath.replace(/^views\//, ''); 
+                key = key.startsWith('/') ? key : '/' + key; 
+                try {
+                    const value = await db.get(key);
+                    if (value === null || value === undefined) {
+                        await db.put(key, 0);
+                        addedDirs.push(key); 
+                    }
+                } catch (error) {
+                    if (error.notFound) {
+                        await db.put(key, 0);
+                        addedDirs.push(key); 
+                    } else {
+                        throw error;
+                    }}}}   
     } catch (error) {
         console.error('Error in addTodb:', error);
     }
     return addedDirs;
 }
-
-
-async function getFromdb() {
- let list = [];
+async function getDirFromdb() {
+    let list = [];
     for await (const [key, value] of db.iterator({})) {
-        list.push({ key, value });
+        const [folderName, subfolderName] = key.split('/').filter(Boolean);
+        let folder = list.find(folder => folder.folderName === folderName);
+        if (!folder) {
+            folder = { folderName, subfolders: [] };
+            list.push(folder);
+        }
+        if (subfolderName) {
+            folder.subfolders.push({
+                subfolderName,
+                link: `/${folderName}/${subfolderName}`,
+                views: value
+            });
+        }
     }
-     return list;
+    return list;
 }
-// Increment the value of a folder in the database
-async function incrementFolderValue(folderPath) {
+async function addValueTodb(key, increment = 1) {
+    let value;
     try {
-        // Get the current value
-        let value;
-        try {
-            value = await db.get(folderPath);
-        } catch (error) {
-            if (error.notFound) {
-                value = 0; // Default value if the key does not exist
-            } else {
-                throw error; // Re-throw other errors
-            }
-        }        
-        // Increment the value
-        value += 1;        
-        // Update the value in the database
-        await db.put(folderPath, value);
-        console.log(`Folder ${folderPath} accessed ${value} times.`);
+        value = await db.get(key);
     } catch (error) {
-        console.error('Error in incrementFolderValue:', error);
-    }
+        if (error.notFound) {
+            throw new Error(`Key ${key} not found in database`);
+        } else {
+            throw error;
+        }}
+    value += increment;
+    await db.put(key, value);
+    return value;
 }
-/*
-// Define the routes
+const app = express();
+app.set("view engine", "ejs");
+app.set('views', path.join(__dirname, 'views'));
 app.get("/sync", async (req, res) => {
-  try {
-    await processDirectory(dirname);
-    console.log("Sync Complete!", dirname);
+    await addTodb();
     res.redirect("/list");
-  } catch (error) {
-    console.error(`Error in GET /sync: ${error}`);
+});
+app.get("/list", async (req, res) => {
+    const folders = await getDirFromdb();
+    console.log(folders);
+    folders.forEach(folder => {
+        if (folder.subfolders) {
+            folder.subfolders = folder.subfolders.map(subfolder => {
+                return {
+                    ...subfolder,
+                    link: `/${folder.folderName}/${subfolder.subfolderName}`
+                };});}});
+    res.render('list', { folders: folders });
+});
+app.get("/:folderName/:subfolderName?", async (req, res) => {
+  const { folderName, subfolderName } = req.params;
+  let folderPath = `/${folderName}`;
+  if (subfolderName) {
+    folderPath += `/${subfolderName}`;
   }
+  // Get the data from your database
+  const dbData = await getDirFromdb(folderPath);
+  // Render the EJS file with the data from your database
+  res.render("index", { dbData: dbData });
 });
-app.get("/:folderName", async (req, res) => {
-    const folderPath = path.join(views, req.params.folderName);
-    
-    // Increment the value of the folder in the database
-    await incrementFolderValue(folderPath);
-    
-    // ... rest of your route handler ...
-});
-app.get("/:folderName/:subfolderName", (req, res) => {
+
+/*
+app.post("/incrementViewCount", async (req, res) => {
+    const { key, source } = req.body;
+    if (source === 'buttonClick') {
+        const newValue = await addValueTodb(key);
+        console.log(key, newValue);
+        res.json({ newViewCount: newValue });
+    }
 });
 */
-// Start the server
+app.post('/incrementViewCount', async (key, value) => {
+    
+    const addViewCount = await addValueTodb(key);
+    const getViewCount = await getDirFromdb(key, value);
+    console.log(addViewCount, getViewCount); 
+
+    //res.json({ folderName: key, getViewCount: foldernName });
+});
+
+function myFunction(data) {
+    // Your function logic here
+    return "Hello, client!";
+}
+
+function asyncHandler(fn) {
+    return function(req, res, next) {
+        return Promise
+            .resolve(fn(req, res, next))
+            .catch(next);
+    }
+}
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
+});
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
-async function main() {
-    let folders = await addTodb();
-    console.log("addedFolders: ", folders);
-    let tree = await getFromdb();
-    console.log("returnedFolders :", tree);
-}
-main().catch(console.error);

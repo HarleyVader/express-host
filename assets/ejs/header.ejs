@@ -1,8 +1,8 @@
   <br><br>
   <div class="grid-container">
       <div class="navbar-brand logo grid-item left">
-       <h1><%= folders.title %></h1>
-        <a href="<%= folders.homeUrl %>">        
+       <h1><%= folderName %></h1>
+        <a href="/<%= folderName %>">        
           <img
             class="imgFluid"
             src="https://brandynette.xxx/wp-content/uploads/2024/02/brandynette.xxx-2560x640-1-300x75.jpg"
@@ -11,9 +11,9 @@
         </a>
       </div>
       <div class="grid-item center" id="timer">00:00:00</div>
-     <a class="link grid-item right" href="<%= folders.homeUrl %>">/<%= folders.homeUrl %></a>
+     <a class="link grid-item right" href="/<%= folderName %>">/<%= folderName %></a>
       
       </div>
     </div>
-
-<%- include("../js/timer.ejs") %>
+<script src="../js/timer.js">
+</script>

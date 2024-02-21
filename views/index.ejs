@@ -1,19 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= folders.title %></title>  
-    
-    <%- include('../assets/js/melkanea.ejs') %>
-<%- include('../assets/js/analytics.ejs') %>
-<link
-  href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css"
-  rel="stylesheet"
-  integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT"
-  crossorigin="anonymous"
-/>
-  </head>
+<html>
+<head>
+    <title><%= dbData.folderName %></title>
+    <script>
+        function incrementViewCount() {
+        console.log('incrementViewCount called'); // Add this line
+        fetch('/incrementViewCount', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ key: '<%= dbData.folderPath %>', source: 'videoPlay' }),
+
+        })
+        .then(response => response.json())
+          .then(data => console.log(data))
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+    </script>
+</head>
+<body>
+    <div class="container pt-30 categories-list">
+      <div class="row">
+        <div class="col col-12">
+          <div class="card-columns">
+            <% dbData.forEach(function(folder) { %>
+            <div class="card-primary col-12 col-sm-3 col-lg-3 mr-auto p-2">
+              <div class="card-header" id="<%= folder.folderName %>">
+                <a
+                  title="<%= folder.folderName %>"
+                  href="/<%= folder.folderName %>"
+                >
+                  <h1 class="card-title">
+                    <%= folder.folderName %>
+                    <i class="fa fa-external-link"></i>
+                  </h1>
+                </a>
+                <% if (folder.subfolders) { %> 
+                <% folder.subfolders.forEach(function(subfolder) { %>
+                <div class="card-block">
+                  <ul>
+                    <!--Ranking list -->
+                    <li><!--listed item -->
+                      <div class="icon">
+                        <img
+                          class="favicon"
+                          alt=""
+                          src="favicon.ico"
+                          width="15px"
+                          height="15px"
+                        />
+                        <a class="link" href="<%= subfolder.link %>"><%= subfolder.subfolderName %></a>
+                        <a title="<%= subfolder.subfolderName %>" rel="noopener nofollow" target="_new" href="<%= subfolder.link %>">
+                            <i class="fa fa-external-link"></i>
+                        </a>
+                      </div>
+                      <div id="views"> <!-- Add your Views here -->
+                        <%= subfolder.views %> <!-- Fetch views from the database -->
+                      </div>
+                    </li>
+                    <!--listed item END-->
+                  </ul>
+                  <!--Ranking list END-->
+                </div>
+                <% }); %> 
+                <% } %>
+              </div>
+            </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+    </div>
+</body>
+</html>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@800&display=swap');
 
@@ -46,8 +108,8 @@
   --color-2: #F7A8B8;
   /* details */
   --radius: 2rem;
-  --padding-1: .3%;
-  --margin-1: .3%;
+  --padding: .1%;
+  --margin: .1%;
   --padding-2: .5rem;
   --margin-2: .5rem;
 }
@@ -89,6 +151,43 @@ h3
   font-family: 'Kanit', sans-serif;
 }
 
+ul.no-bullets
+{
+  list-style-type: none;
+  padding: var(--margin);
+  margin: var(--padding);
+}
+
+li
+{
+  list-style-type: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--margin);
+  margin: var(--padding);
+  border: 4px;
+  border-style: ridge;
+  border-radius: var(--radius);
+  border-color: rgb(0, 255, 255);
+  background-color: var(--chocolate-cosmos);
+}
+
+a 
+{
+  color: var(--hollywood-cerise); /* Replace with your desired color */
+}
+
+a:hover 
+{
+  color: var(--hollywood-cerise-2); /* Replace with your desired color */
+}
+
+#views 
+{
+  margin-right: 2%;
+}
+
 .category
 {
   font-weight: bold;
@@ -112,7 +211,7 @@ h3
 
 .card-columns
 {
-  border: 3rm;
+  border: 5px;
   border-color: var(--hollywood-cerise);
   border-radius: var(--radius);
   margin: var(--margin);
@@ -121,7 +220,8 @@ h3
 
 .card-primary
 {
-  border: 3rm;
+  max-width: 15%;
+  border: 5px;
   border-color: var(--hollywood-cerise);
   border-radius: var(--radius);
   border-style: ridge;
@@ -144,24 +244,6 @@ h3
   border: solid;
   border-width: 2px;
   border-color: rgb(55, 0, 38);
-}
-
-ul.no-bullets
-{
-  list-style-type: none;
-  padding: var(--margin-1);
-  margin: var(--padding-1);
-}
-
-li
-{
-  padding: var(--margin-1);
-  margin: var(--padding-1);
-  border: 4px;
-  border-style: ridge;
-  border-radius: var(--radius);
-  border-color: rgb(0, 255, 255);
-  background-color: rgb(208, 0, 191);
 }
 
 .cookie-banner
@@ -243,20 +325,3 @@ li
   grid-template-columns: auto auto auto;
 }
 </style>
-<body>
-    <header>
-        <%- include('../assets/ejs/header.ejs', {folders: folders}) %>
-    </header>
-    <br><br>
-    <main>
-      <%- include('../assets/ejs/main.ejs', {folders: folders}) %>
-        <% if (folderName && subfolderName) { %>
-          <%- include(`../views/${folderName}/${subfolderName}/index.ejs`) %>
-        <% } %>
-    </main>
-    <footer>
-        <%- include('../assets/ejs/footer.ejs') %>
-    </footer>
-      <script src="https://kit.fontawesome.com/8636598a5c.js" crossorigin="anonymous"></script>
-  </body>
-  </html>
