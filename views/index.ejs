@@ -21,7 +21,7 @@
     </script>
 </head>
 <body>
-<section class="container pt-30 categories-list">
+<div class="container pt-30 categories-list">
       <div class="row">
         <div class="col col-12">
           <div class="card-columns">
@@ -72,6 +72,11 @@
           </div>
         </div>
       </div>
+    </div>
+    <section class="video">
+    <% if (subfolderPath) { %>
+      <% include(subfolderPath) %>
+    <% } %>
     </section>
 </body>
 </html>

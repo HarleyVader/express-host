@@ -102,11 +102,20 @@ app.get("/:folderName/:subfolderName?", async (req, res) => {
   const folders = await getDirFromdb();
   let folder = folders.find(f => f.folderName === folderName);
   if (!folder) {
-    res.render('index', { folders: folders});
-    return res.status(404).send('Folder not found');
+    res.status(404).render('404', {folders: folders});
+  } else {
+    let viewCount = (await getDirFromdb(folderName))[0]?.views || 0;
+    let subfolderPath = null;
+
+    // Check if subfolderName is provided and index.ejs exists in the subfolder
+    if (subfolderName && fs.existsSync(path.join(views, folderName, subfolderName, 'index.ejs'))) {
+      subfolderPath = path.join(folderName, subfolderName, 'index.ejs'); // path to the subfolder's index.ejs
+    }
+
+    res.render('index', { folders: folders, viewCount: viewCount, subfolderPath: subfolderPath });
   }
-  res.render('index', { folders: folders});
 });
+
 app.post('/incrementViewCount', async (req, res) => {
     const key = req.body.key;
     const value = req.body.value;
