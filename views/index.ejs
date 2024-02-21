@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title><%= dbData.folderName %></title>
+    <title><%= folders.folderName %></title>
     <script>
         function incrementViewCount() {
         console.log('incrementViewCount called'); // Add this line
@@ -10,8 +10,7 @@
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ key: '<%= dbData.folderPath %>', source: 'videoPlay' }),
-
+            body: JSON.stringify({ key: '<%= folders.folderPath %>', source: 'videoPlay' }),
         })
         .then(response => response.json())
           .then(data => console.log(data))
@@ -22,11 +21,11 @@
     </script>
 </head>
 <body>
-    <div class="container pt-30 categories-list">
+<section class="container pt-30 categories-list">
       <div class="row">
         <div class="col col-12">
           <div class="card-columns">
-            <% dbData.forEach(function(folder) { %>
+            <% folders.forEach(function(folder) { %>
             <div class="card-primary col-12 col-sm-3 col-lg-3 mr-auto p-2">
               <div class="card-header" id="<%= folder.folderName %>">
                 <a
@@ -73,7 +72,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </section>
 </body>
 </html>
 <style>

@@ -86,59 +86,38 @@ app.get("/sync", async (req, res) => {
 });
 app.get("/list", async (req, res) => {
     const folders = await getDirFromdb();
-    console.log(folders);
+
     folders.forEach(folder => {
         if (folder.subfolders) {
             folder.subfolders = folder.subfolders.map(subfolder => {
                 return {
                     ...subfolder,
                     link: `/${folder.folderName}/${subfolder.subfolderName}`
-                };});}});
+                };});}
+                });
     res.render('list', { folders: folders });
 });
 app.get("/:folderName/:subfolderName?", async (req, res) => {
   const { folderName, subfolderName } = req.params;
-  let folderPath = `/${folderName}`;
-  if (subfolderName) {
-    folderPath += `/${subfolderName}`;
+  const folders = await getDirFromdb();
+  let folder = folders.find(f => f.folderName === folderName);
+  if (!folder) {
+    res.render('index', { folders: folders});
+    return res.status(404).send('Folder not found');
   }
-  // Get the data from your database
-  const dbData = await getDirFromdb(folderPath);
-  // Render the EJS file with the data from your database
-  res.render("index", { dbData: dbData });
+  res.render('index', { folders: folders});
 });
+app.post('/incrementViewCount', async (req, res) => {
+    const key = req.body.key;
+    const value = req.body.value;
 
-/*
-app.post("/incrementViewCount", async (req, res) => {
-    const { key, source } = req.body;
-    if (source === 'buttonClick') {
-        const newValue = await addValueTodb(key);
-        console.log(key, newValue);
-        res.json({ newViewCount: newValue });
-    }
-});
-*/
-app.post('/incrementViewCount', async (key, value) => {
-    
     const addViewCount = await addValueTodb(key);
     const getViewCount = await getDirFromdb(key, value);
     console.log(addViewCount, getViewCount); 
 
-    //res.json({ folderName: key, getViewCount: foldernName });
+    res.json({ folderName: key, getViewCount: getViewCount });
 });
 
-function myFunction(data) {
-    // Your function logic here
-    return "Hello, client!";
-}
-
-function asyncHandler(fn) {
-    return function(req, res, next) {
-        return Promise
-            .resolve(fn(req, res, next))
-            .catch(next);
-    }
-}
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
