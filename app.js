@@ -1,131 +1,102 @@
+const { name } = require("ejs");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const MongoClient = require('mongodb').MongoClient;
 const PORT = 7777;
-const views = "./views";
-const excludedir = ["assets", "node_modules", "vidViews", ".git", "favicon.ico"];
+const views = "views";
 let db;
-const filter = (value, dirPath = views) => {
-    const fullPath = path.resolve(dirPath) + '/' + value;
-    if (excludedir.includes(value)) {
-        return false; 
-    }
-    const stats = fs.lstatSync(fullPath);
-    if (stats.isDirectory()) {
-        return true;
-    }
-    return false;
-}
-async function addTodb(dirPath = views, addedDirs = []) {
-    try {
-        const files = fs.readdirSync(dirPath).filter(file => filter(file, dirPath));
-        for (let file of files) {
-            const filePath = path.join(dirPath, file);
-            if (fs.statSync(filePath).isDirectory()) {
-                if (dirPath !== views) {
-                    let key = filePath.replace(/^views\//, ''); 
-                    key = key.startsWith('/') ? key : '/' + key; 
-                    const value = await db.collection('views').findOne({ key });
-                    if (!value) {
-                        await db.collection('views').insertOne({ key, count: 0 });
-                        addedDirs.push(key); 
-                    }
-                }
-                await addTodb(filePath, addedDirs);
+async function addTodb(folderPath = views) {
+    const files = fs.readdirSync(folderPath);
+    const foldersToInsert = [];
+    for (const file of files) {
+        const filePath = path.join(folderPath, file);
+        const stats = fs.statSync(filePath);
+        if (stats.isDirectory()) {
+            const folder = {
+                name: file,
+                count: 0,
+                folderPath: filePath
+            };
+            const existingFolder = await db.collection('views').findOne({ name: folder.name });
+            if (!existingFolder) {
+                foldersToInsert.push(folder);
             }
+            const subfolders = await addTodb(filePath);
+            foldersToInsert.push(...subfolders);
         }
-    } catch (error) {
-        console.error('Error in addTodb:', error);
     }
-    return addedDirs;
+    return foldersToInsert;
+}
+async function processFolders() {
+    const foldersToInsert = await addTodb();
+    if (foldersToInsert.length > 0) {
+        await db.collection('views').insertMany(foldersToInsert);
+    }
 }
 async function startApp() {
-  const client = await MongoClient.connect('mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.1.5', { useUnifiedTopology: true });
-  db = client.db('vidViews');
-  const app = express();
-  app.set("view engine", "ejs");
-  app.get("/", async (req, res) => {
+    try {
+      const client = await MongoClient.connect('mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.1.5', { useUnifiedTopology: false });
+      db = client.db('views');
+      const app = express();
+      app.set("view engine", "ejs");
+      app.get("/sync", async (req, res) => {
+        await processFolders();
+        res.redirect("/list");
+      });
+      app.get("/list", async (req, res) => {
         let folders = await db.collection('views').find().toArray();
-        folders = folders.map(folder => ({
-            folderName: folder.key,
-            views: folder.count,
-            subfolders: []
-        }));
-        res.render('index', { folders: folders });
-    });
-  app.get("/sync", async (req, res) => {
-      await addTodb();
-      res.redirect("/list");
-  });
-  app.get("/list", async (req, res) => {
-        let folders = await db.collection('views').find().toArray();
-        folders = folders.map(folder => {
-            const folderPath = path.join(views, folder.key);
-            const hasIndex = fs.existsSync(path.join(folderPath, 'index.ejs'));
-            return {
-                folderName: folder.key,
-                views: folder.count,
-                subfolders: [],
-                hasIndex: hasIndex
-            };
+        let folderMap = {};
+        folders.forEach(folder => {
+            folder.subfolders = [];
+            folder.folderPath = folder.folderPath.replace(/^views\//, ''); // Remove 'views/' prefix
+            folderMap[folder.folderPath] = folder;
         });
-        res.render('list', { folders: folders });
-    });
-   /*
-    app.get("/:folderName", async (req, res) => {
-        const folderName = req.params.folderName;
-        const folder = await db.collection('views').findOne({ key: folderName });
-        if (folder) {
-        const subfolders = folder.subfolders.map(subfolderName => {
-            const subfolder = db.collection('views').findOne({ key: `${folderName}/${subfolderName}` });
-            return {
-            subfolderName: subfolderName,
-            views: subfolder ? subfolder.count : 0
-            };
+        folders.forEach(folder => {
+            const parentPath = path.dirname(folder.folderPath);
+            if (folderMap[parentPath]) {
+                folderMap[parentPath].subfolders.push(folder);
+            }
         });
-        res.render('list', { folders: [{ ...folder, subfolders: subfolders }] });   
-        } else {
-        res.status(404).send('Folder not found');
-        }
+        const rootFolders = folders.filter(folder => !folderMap[path.dirname(folder.folderPath)]);
+        res.render('index', { folders: rootFolders, title: 'List' });
     });
-*/
-    app.get("/:folderName/:subfolderName?", async (req, res) => {
-        const { folderName, subfolderName } = req.params;
-        let folderPath = `${folderName}/${subfolderName || ''}`;
-        let fullPath = path.join(views, folderPath);
     
-        if (fs.existsSync(fullPath) && fs.lstatSync(fullPath).isDirectory() && fs.existsSync(path.join(fullPath, 'index.ejs'))) {
-            const folders = await db.collection('views').find().toArray();
-            res.render(`${folderPath}/index`, { folders, folderPath, includeFile: true, fs: fs });
-        } else {
-            const folders = await db.collection('views').find().toArray();
-            res.render('index', { folders, folderPath, includeFile: false, fs: fs });
-        }
-    });
+    
+    app.get('/favicon.ico', (req, res) => res.sendStatus(204));
+
+
     app.get("/getViewCount/:folderName", async (req, res) => {
+        console.log('Handling GET request for /getViewCount/:folderName');
         const folderName = req.params.folderName;
-        const folder = await db.collection('views').findOne({ key: folderName });
+        const folder = await db.collection('views').findOne({ name: folderName });
         res.json({ viewCount: folder.count });
     });
-  app.post('/incrementViewCount/:folderName', async (req, res) => {
-    const folderName = req.params.folderName;
-    await db.collection('views').updateOne(
-      { key: folderName },
-      { $inc: { count: 1 } }
-    );
-    res.sendStatus(200);
-  });
-  app.use((err, req, res, next) => {
-      console.error(err.stack);
-      res.status(500).send('Something broke!');
-  });
-  app.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
-  });
-  process.on('SIGINT', () => {
-    db.close();
-    process.exit();
-  });
-}
-startApp().catch(err => console.error(err));
+    
+    app.post('/incrementViewCount/:folderName', async (req, res) => {
+        console.log('Handling POST request for /incrementViewCount/:folderName');
+        const folderName = req.params.folderName;
+        await db.collection('views').updateOne(
+          { name: folderName },
+          { $inc: { count: 1 } }
+        );
+        res.sendStatus(200);
+    });
+    
+      app.use((err, req, res, next) => {
+        console.error('An error occurred:', err.stack);
+        res.status(500).send('Something broke!');
+      });
+      app.listen(PORT, () => {
+        console.log(`Server started on port ${PORT}`);
+      });
+      process.on('SIGINT', () => {
+        console.log('Closing database connection and exiting...');
+        db.close();
+        process.exit();
+      });
+    } catch (err) {
+      console.error('An error occurred:', err);
+    }
+  }
+  startApp().catch(err => console.error('An error occurred:', err));
