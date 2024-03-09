@@ -18,7 +18,7 @@ echo -e $magenta "  \ \  \    \ \  \ \  \_|\ \ \  \____\ \ \ \ \  \ \  \ \  \ \ 
 echo -e $magenta "   \ \__\    \ \__\ \_______\ \_______\ \_\ \ \__\ \__\ \__\ \_\ \ \__\ \_______\ \__\ \__\ " $coloroff
 echo -e $magenta "    \|__|     \|__|\|_______|\|_______|\|__| \|__|\|__|\|__|\|__| \|__|\|_______|\|__|\|__|" $coloroff
 
-echo -e $cyan "melkanea $magenta hestiacp $white nodejs $magenta enviroment $cyan installer" $coloroff
+echo -e $cyan "melkanea $magenta bash $white hestiacp $magenta nginx $cyan portopener $coloroff
 
 # Check if three arguments are provided
 if [ "$#" -ne 3 ]; then
