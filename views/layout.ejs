@@ -1,74 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <!-- Add your CSS links here -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- brandnyette info -->
+    <% include("../assets/ejs/brandyentte.ejs") %>
 </head>
 <body>
+    <!-- header-->
+    <% include("../assets/ejs/header.ejs") %>
     <!-- Navbar -->
-    <div class="navbar">
-        <div class="pt-30 categories-list">
-            <div class="row">
-                <div class="col col-12">
-                    <div class="card-columns">
-                        <% function renderFolder(folder) { %>
-                        <div class="card-primary col-12 col-sm-3 col-lg-3 mr-auto p-2">
-                            <div
-                                class="card-header"
-                                id="<%= folder.folderPath %>">
-                                <a
-                                    title="<%= folder.folderPath %>"
-                                    href="<%= folder.folderPath %>">
-                                    <h3 class="card-title">
-                                        <%= folder.folderPath %>
-                                        <i class="fa fa-external-link"></i>
-                                    </h3>
-                                </a>
-                                <% folder.subfolders.forEach(function(subfolder) { %>
-                                <div class="card-block">
-                                    <ul>
-                                        <!--Ranking list -->
-                                        <li>
-                                            <!--listed item -->
-                                            <div class="icon">
-                                                <img
-                                                    class="favicon"
-                                                    alt=""
-                                                    src="favicon.ico"
-                                                    width="15px"
-                                                    height="15px" />
-                                                <a
-                                                    class="link"
-                                                    href="<%= subfolder.folderPath %>"
-                                                    ><%= subfolder.name %></a
-                                                >
-                                                <a
-                                                    title="<%= subfolder.name %>"
-                                                    rel="noopener nofollow"
-                                                    target="_new"
-                                                    href="<%= subfolder.folderPath %>">
-                                                    <i class="fa fa-external-link"></i>
-                                                </a>
-                                            </div>
-                                        </li>
-                                        <!--listed item END-->
-                                    </ul>
-                                    <!--Ranking list END-->
-                                </div>
-                                <% }); %>
-                            </div>
-                        </div>
-                        <% } %> <% folders.forEach(renderFolder); %>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Content -->
-	<% if (typeof contentPartial !== 'undefined') { %>
-		<div class="content">
-			<%- include(contentPartial, { folders: folders, title: title, folder: folder }) %>
+	<div class="navbar">
+		<div class="container pt-30 categories-list">
+		  <div class="row">
+			<div class="col col-12">
+			  <div class="card-columns">
+				<% folders.filter(folder => !folder.url.includes('/')).forEach(function(folder) { %>
+				  <div class="card-primary col-12 col-sm-3 col-lg-3 mr-auto p-2">
+					<div class="card-header" id="<%= folder.url %>">
+					  <a title="<%= folder.url %>" href="/<%= folder.url %>">               
+						<h1 class="card-title"><%= folder.folderName %>                 
+						  <i class="fa fa-external-link"></i>
+						</h1>
+					  </a>
+					  <% if (folder.subfolders.length > 0) { %>
+						<% folder.subfolders.forEach(function(subfolderId) { %>
+						  <% let subfolder = folders.find(f => f._id.equals(subfolderId)); %>
+						  <% if (subfolder) { %>
+							<div class="card-block">
+							  <ul>
+								<li>
+								  <div class="icon">
+									<img class="favicon" alt="" src="favicon.ico" width="15px" height="15px">
+									<a class="link" href="/<%= subfolder.url %>"><%= subfolder.folderName %></a>
+									<a title="<%= subfolder.folderName %>" rel="noopener nofollow" target="_new" href="/<%= subfolder.url %>">
+									  <i class="fa fa-external-link"></i>
+									</a>
+								  </div>
+								</li>
+							  </ul>
+							</div> 
+						  <% } %>
+						<% }); %>
+					  <% } %>
+					</div>
+				  </div>
+				<% }); %>
+			  </div>
+			</div>
+		  </div>
 		</div>
-	<% } %>
+	  </div>
+    <!-- Brandynette footer-->
+    <% include("../assets/ejs/ads.ejs") %>
+    <% include("../assets/ejs/footer.ejs") %>
 </body>
 </html>
 <style>
@@ -99,8 +85,8 @@
 		--color-2: #f7a8b8;
 		/* details */
 		--radius: 2rem;
-		--padding: 0.1%;
-		--margin: 0.1%;
+		--padding: 1%;
+		--margin: 1%;
 		--padding-2: 0.5rem;
 		--margin-2: 0.5rem;
 	}
@@ -111,6 +97,7 @@
 		font-family: "Kanit", sans-serif;
 		letter-spacing: 1.5px;
 		color: #e74c3c;
+		
 	}
 
 	p {
@@ -122,25 +109,31 @@
 		margin: 1%;
 		padding: 1%;
 		color: var(--color-1);
-		font-family: "Kanit", sans-serif;
 	}
 
 	h2 {
 		color: var(--color-2);
-		text-align: center;
-		font-family: "Kanit", sans-serif;
+		text-align: left;
+		
 	}
 
 	h3 {
 		color: var(--color-1);
-		text-align: center;
-		font-family: "Kanit", sans-serif;
+		text-align: left;
+		padding: var(--margin);
+		margin: var(--padding);
+		
 	}
+	ul {
+		padding: var(--margin);
+		margin: var(--padding);
 
+	}
 	ul.no-bullets {
 		list-style-type: none;
 		padding: var(--margin);
 		margin: var(--padding);
+	
 	}
 
 	li {
@@ -203,7 +196,7 @@
 	}
 
 	.content {
-		max-width: 1080px;
+		max-width: auto;
 		margin: auto;
 		text-align: center;
 		font: bold;
@@ -289,9 +282,9 @@
 		display: flex;
 	}
 	.navbar {
-		width: 15%;
+		width: 14%;
 	}
 	.content {
-		width: 80%;
+		width: 84%;
 	}
 </style>
