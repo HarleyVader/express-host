@@ -48,11 +48,19 @@
 				  </div>
 				<% }); %>
 			  </div>
+			  <iframe src="" frameborder="0"></iframe>
 			</div>
 		  </div>
 		</div>
 	  </div>
 	</div>
+
+	<section>
+		<!-- Content -->
+		<% if (contentPartial === 'index') { %>
+			<%- include(`./${indexPath}`) %>
+		<% } %>
+	</section>
     <!-- Brandynette footer-->
     <% include("../assets/ejs/ads.ejs") %>
     <% include("../assets/ejs/footer.ejs") %>

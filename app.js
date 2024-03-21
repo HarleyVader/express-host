@@ -47,12 +47,12 @@ async function addTodb(folderPath = views, urlPath = "") {
 async function startApp() {
 	try {
 		const client = await MongoClient.connect(
-			"mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.1.5",
-			{ useUnifiedTopology: true }
+			"mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.1.5"
 		);
 		db = client.db(views);
 		const app = express();
 		app.set("view engine", "ejs");
+		
 
 		app.get("/sync", async (req, res) => {
 			await addTodb();
@@ -78,67 +78,73 @@ async function startApp() {
 				url: "", // pass empty url to layout
 			});
 		});
-
 		app.get("/favicon.ico", (req, res) => res.sendStatus(204));
-		app.get("/:folder", async function (req, res) {
-			let folderName = req.params.folder;
-			let folders = await db.collection(views).find().toArray();
-			let folder = folders.find((f) => f.url === folderName);
-
-			if (!folder) {
-				res.status(404).send("Folder not found");
-				return;
-			}
-
-			let contentPartial;
-			if (folder.subfolders && folder.subfolders.length > 0) {
-				contentPartial = "subfolder-index";
-			} else {
-				contentPartial = "index";
-			}
-
-			res.render("layout", {
-				title: folder.folderName,
-				folder: folder,
-				folders: folders,
-				contentPartial: contentPartial,
-			});
-		});
 		app.get("/:folderName/:subfolderName?", async (req, res) => {
+			console.log(`Handling request for /${req.params.folderName}/${req.params.subfolderName}`);
 			const { folderName, subfolderName } = req.params;
 			try {
-				const folder = await db
-					.collection(views)
-					.findOne({ folderName: folderName, subfolderName: subfolderName });
-				console.log(folder); // Add this line to print the folder object to the console
-				if (folder) {
-					let folders = await db.collection(views).find().toArray();
-					folder.subfolders = folder.subfolders.map((id) =>
-						folders.find((f) => f._id.equals(id))
-					);
-					let contentPartial;
-					if (folder.subfolders && folder.subfolders.length > 0) {
-						contentPartial = "index";
-					} else {
+				let folder;
+				let subfolder;
+				let indexPath;
+				if (subfolderName && subfolderName !== 'favicon.ico') {
+					const parentFolder = await db.collection(views).findOne({ folderName: folderName });
+					if (parentFolder) {
+						folder = parentFolder;
+						subfolder = await db.collection(views).findOne({ folderName: subfolderName });
+						if (subfolder) {
+							indexPath = path.join(subfolder.folderPath, 'index.ejs');
+						}
+					}
+				} else {
+					folder = await db.collection(views).findOne({ folderName: folderName });
+					if (folder) {
+						indexPath = path.join(folder.folderPath, 'index.ejs');
+					}
+				}
+		
+				if (!folder) {
+					res.status(404).send("Folder not found");
+					return;
+				}
+		
+				let folders = await db.collection(views).find().toArray();
+				folder.subfolders = folder.subfolders.map((id) =>
+					folders.find((f) => f._id.equals(id))
+				);
+		
+				let contentPartial;
+				if (folder.subfolders && folder.subfolders.length > 0) {
+					contentPartial = "subfolder-index";
+				} else {
+					const indexPath = path.join(folder.folderPath, 'index.ejs');
+					try {
+						await fs.access(indexPath, fs.constants.F_OK);
+						// If index.ejs exists, set contentPartial to 'index'
+						contentPartial = 'index';
+					} catch (err) {
+						// If index.ejs does not exist, set contentPartial to null
 						contentPartial = null;
 					}
-					res.render("layout", {
-						folders: folder.subfolders,
-						title: folder.folderName,
-						folder: folder,
-						contentPartial: contentPartial,
-						url: folder.url, // pass url from db to layout
-					});
-				} else {
-					res.render("layout", {
-						folders: [],
-						title: "Root",
-						contentPartial: "index",
-						folder: { subfolders: [] },
-						url: "", // pass empty url to layout
-					});
 				}
+				res.render("layout", {
+					folders: folders,
+					title: folder.folderName,
+					folder: folder,
+					subfolder: subfolder, // pass the subfolder object
+					url: folder.url,
+					contentPartial: contentPartial,
+					indexPath: indexPath,
+				});
+				console.log("contentPartial", contentPartial);
+				//console.log("folder", folder);
+				//console.log("subfolder", subfolder);
+				console.log("url", folder.url);
+				console.log("title", folder.folderName);
+				//console.log("folders", folders);
+				console.log("indexPath", indexPath);
+				
 			} catch (error) {
+				console.error('Error:', error);
 				res.status(500).send("Server Error");
 			}
 		});
@@ -173,7 +179,7 @@ async function startApp() {
 
 		process.on("SIGINT", async () => {
 			console.log("Closing database connection and exiting...");
-			await db.close();
+			await client.close();
 			process.exit();
 		});
 	} catch (err) {
